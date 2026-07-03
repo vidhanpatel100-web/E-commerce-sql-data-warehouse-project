@@ -60,13 +60,13 @@ BEGIN
         BULK INSERT bronze.arc_geoloc_info
         FROM 'E:\E-commerce data\archive\olist_geolocation_dataset.csv'
         WITH (
-            FIRSTROW = 2,
+               FIRSTROW = 2,
             FORMAT = 'CSV',
             FIELDTERMINATOR = ',',
             FIELDQUOTE = '"',
             ROWTERMINATOR = '0x0a',
-            TABLOCK
-        );
+    CODEPAGE = '65001' -- Code Page 65001: SQL Server recognizes the exact global standard for UTF-8, looks up the byte, and renders the perfect, pristine letter ç on the very first try.
+);
         SET @end_time = GETDATE();
         PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR(10)) + ' sec';
         PRINT '>> ------------ ';
