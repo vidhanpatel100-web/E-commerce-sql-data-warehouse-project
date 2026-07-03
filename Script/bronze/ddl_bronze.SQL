@@ -47,6 +47,17 @@ CREATE TABLE bronze.arc_ord_item_info(
   freight_value         DECIMAL(10, 2)
 );
 
+IF OBJECT_ID('bronze.arc_payment_info' , 'U') IS NOT NULL
+    DROP TABLE bronze.arc_payment_info;
+
+CREATE TABLE bronze.arc_payment_info (
+    order_id             VARCHAR(50) NOT NULL,
+    payment_sequential   INT,
+    payment_type         VARCHAR(50),
+    payment_installments INT,
+    payment_value        DECIMAL(10, 2), -- Maintains exact financial accuracy
+    dwn_create_date      DATETIME2 DEFAULT GETDATE()
+);
 IF OBJECT ID('bronze.arc_ord_rvew_info' , 'U') IS NOT NULL
     DROP TABLE  bronze.arc_ord_rvew_info;
 
