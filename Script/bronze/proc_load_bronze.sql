@@ -1,3 +1,16 @@
+
+EXEC bronze.ecommerce_load_bronze;
+
+CREATE OR ALTER PROCEDURE bronze.ecommerce_load_bronze AS
+BEGIN
+DECLARE @start_time DATETIME, @end_time DATETIME,@batch_start_time DATETIME, @batch_end_time DATETIME;
+BEGIN TRY
+SET @batch_start_time = GETDATE();
+PRINT '=================================================='
+PRINT 'Loading Bronze Layer'
+PRINT '=================================================='
+
+```
     -- 1. Ingest Customers Dataset
 
     SET @start_time = GETDATE();
@@ -20,7 +33,6 @@
     SET @end_time = GETDATE();
     PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
      PRINT '>> ------------ ';
-
 
     -- 2. Ingest Geolocation Dataset
     SET @start_time = GETDATE();
@@ -45,7 +57,6 @@
     SET @end_time = GETDATE();
     PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
     PRINT '>> ------------ ';
-
 
     -- 3. Ingest Orders Dataset
     SET @start_time = GETDATE();
@@ -118,7 +129,6 @@
     SET @end_time = GETDATE();
     PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
     PRINT '>> ------------ ';
-
 
     -- 6. Ingest Order Reviews Dataset
     SET @start_time = GETDATE();
@@ -223,7 +233,6 @@
     PRINT '   -- Total Load Duration: ' + CAST(DATEDIFF(ss, @batch_start_time, @batch_end_time) AS NVARCHAR) + 'sec';
     PRINT '=================================================='
 
-
     END TRY
     BEGIN CATCH
     PRINT '=================================================='
@@ -232,3 +241,6 @@
     PRINT 'Error Message' + CAST(ERROR_NUMBER() AS VARCHAR);
     PRINT '=================================================='
     END CATCH
+```
+
+END
