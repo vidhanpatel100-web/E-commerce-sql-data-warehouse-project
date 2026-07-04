@@ -1,167 +1,234 @@
-/*
-===============================================================================
-Stored Procedure: Load Bronze Layer (Source -> Bronze)
-===============================================================================
-Script Purpose:
-    This stored procedure loads data into the 'bronze' schema from external CSV files.
-    It performs the following actions:
-    - Truncates the bronze tables before loading data.
-    - Uses the 'BULK INSERT' command to load data from CSV files to bronze tables.
+    -- 1. Ingest Customers Dataset
 
-Parameters:
-    None.
-    This stored procedure does not accept any parameters or return any values.
+    SET @start_time = GETDATE();
+    PRINT '>> Truncating Table: bronze.arc_cust_info'
 
-Usage Example:
-    EXEC bronze.ecommerce_load_bronze;
-===============================================================================
-*/
+    TRUNCATE TABLE bronze.arc_cust_info;
 
-CREATE OR ALTER PROCEDURE bronze.ecommerce_load_bronze AS
-BEGIN
-    DECLARE @start_time DATETIME, @end_time DATETIME, @batch_start_time DATETIME, @batch_end_time DATETIME;
-    
-    BEGIN TRY
-        SET @batch_start_time = GETDATE();
-        PRINT '==================================================';
-        PRINT 'Loading Bronze Layer';
-        PRINT '==================================================';
+    PRINT '>> Inserting Table: bronze.arc_cust_info'
 
-        -- ===================================================================
-        -- 1. Ingest Customers Dataset
-        -- ===================================================================
-        SET @start_time = GETDATE();
-        PRINT '>> Truncating Table: bronze.arc_cust_info';
-        TRUNCATE TABLE bronze.arc_cust_info;
+    BULK INSERT bronze.arc_cust_info
+    FROM 'E:\E-commerce data\archive\olist_customers_dataset.csv' -- Added .csv extension
+    WITH(
+        FIRSTROW = 2,
+        FORMAT = 'CSV',              -- Crucial for handling real CSV structures
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',            -- Strips out the quotation marks automatically
+        ROWTERMINATOR = '0x0a',      -- Maps perfectly to your file's Unix (LF) format
+        TABLOCK
+    );
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+     PRINT '>> ------------ ';
 
-        PRINT '>> Inserting Table: bronze.arc_cust_info';
-        BULK INSERT bronze.arc_cust_info
-        FROM 'E:\E-commerce data\archive\olist_customers_dataset.csv'
-        WITH(
-            FIRSTROW = 2,
-            FORMAT = 'CSV',
-            FIELDTERMINATOR = ',',
-            FIELDQUOTE = '"',
-            ROWTERMINATOR = '0x0a',
-            TABLOCK
-        );
-        SET @end_time = GETDATE();
-        PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR(10)) + ' sec';
-        PRINT '>> ------------ ';
 
-        -- ===================================================================
-        -- 2. Ingest Geolocation Dataset
-        -- ===================================================================
-        SET @start_time = GETDATE();
-        PRINT '>> Truncating Table: bronze.arc_geoloc_info';
-        TRUNCATE TABLE bronze.arc_geoloc_info;
+    -- 2. Ingest Geolocation Dataset
+    SET @start_time = GETDATE();
 
-        PRINT '>> Inserting Table: bronze.arc_geoloc_info';
-        BULK INSERT bronze.arc_geoloc_info
-        FROM 'E:\E-commerce data\archive\olist_geolocation_dataset.csv'
-        WITH (
-               FIRSTROW = 2,
-            FORMAT = 'CSV',
-            FIELDTERMINATOR = ',',
-            FIELDQUOTE = '"',
-            ROWTERMINATOR = '0x0a',
-    CODEPAGE = '65001' -- Code Page 65001: SQL Server recognizes the exact global standard for UTF-8, looks up the byte, and renders the perfect, pristine letter ç on the very first try.
-);
-        SET @end_time = GETDATE();
-        PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR(10)) + ' sec';
-        PRINT '>> ------------ ';
+    PRINT '>> Truncating Table: bronze.arc_geoloc_info'
 
-        -- ===================================================================
-        -- 3. Ingest Orders Dataset (Using Staging Fix to Prevent Empty Date Crashes)
-        -- ===================================================================
-        SET @start_time = GETDATE();
-        PRINT '>> Truncating Table: bronze.arc_ord_info';
-        
-        DROP TABLE IF EXISTS #temp_orders;
-        CREATE TABLE #temp_orders (
-            order_id VARCHAR(50), customer_id VARCHAR(50), order_status VARCHAR(50),
-            order_purchase_timestamp VARCHAR(50), order_approved_at VARCHAR(50),
-            order_delivered_carrier_date VARCHAR(50), order_delivered_customer_date VARCHAR(50),
-            order_estimated_delivery_date VARCHAR(50)
-        );
+    TRUNCATE TABLE bronze.arc_geoloc_info;
 
-        PRINT '>> Inserting Table: bronze.arc_ord_info (via Staging Layer)';
-        BULK INSERT #temp_orders
-        FROM 'E:\E-commerce data\archive\olist_orders_dataset.csv'
-        WITH ( FIRSTROW = 2, FIELDTERMINATOR = ',', ROWTERMINATOR = '0x0a', TABLOCK );
+    PRINT '>> Inserting Table: bronze.arc_geoloc_info'
 
-        TRUNCATE TABLE bronze.arc_ord_info;
-        INSERT INTO bronze.arc_ord_info (
-            order_id, customer_id, order_status, order_purchase_timestamp, order_approved_at,
-            order_delivered_carrier_date, order_delivered_customer_date, order_estimated_delivery_date
-        )
-        SELECT 
-            REPLACE(order_id, '"', ''), REPLACE(customer_id, '"', ''), REPLACE(order_status, '"', ''),
-            TRY_CAST(NULLIF(REPLACE(order_purchase_timestamp, '"', ''), '') AS DATETIME),
-            TRY_CAST(NULLIF(REPLACE(order_approved_at, '"', ''), '') AS DATETIME),
-            TRY_CAST(NULLIF(REPLACE(order_delivered_carrier_date, '"', ''), '') AS DATETIME),
-            TRY_CAST(NULLIF(REPLACE(order_delivered_customer_date, '"', ''), '') AS DATETIME),
-            TRY_CAST(NULLIF(REPLACE(order_estimated_delivery_date, '"', ''), '') AS DATETIME)
-        FROM #temp_orders;
-        DROP TABLE #temp_orders;
+    BULK INSERT bronze.arc_geoloc_info
+    FROM 'E:\E-commerce data\archive\olist_geolocation_dataset.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
 
-        SET @end_time = GETDATE();
-        PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR(10)) + ' sec';
-        PRINT '>> ------------ ';
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
 
-        -- ===================================================================
-        -- 4. Ingest Order Items Dataset
-        -- ===================================================================
-        SET @start_time = GETDATE();
-        PRINT '>> Truncating Table: bronze.arc_ord_item_info';
-        TRUNCATE TABLE bronze.arc_ord_item_info;
 
-        PRINT '>> Inserting Table: bronze.arc_ord_item_info';
-        BULK INSERT bronze.arc_ord_item_info
-        FROM 'E:\E-commerce data\archive\olist_order_items_dataset.csv'
-        WITH (
-            FIRSTROW = 2,
-            FORMAT = 'CSV',
-            FIELDTERMINATOR = ',',
-            FIELDQUOTE = '"',
-            ROWTERMINATOR = '0x0a',
-            TABLOCK
-        );
-        SET @end_time = GETDATE();
-        PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR(10)) + ' sec';
-        PRINT '>> ------------ ';
+    -- 3. Ingest Orders Dataset
+    SET @start_time = GETDATE();
 
-        -- ===================================================================
-        -- 5. Ingest Order Payments Dataset
-        -- ===================================================================
-        SET @start_time = GETDATE();
-        PRINT '>> Truncating Table: bronze.arc_ord_payment_info';
-        TRUNCATE TABLE bronze.arc_ord_payment_info;
+    PRINT '>> Truncating Table: bronze.arc_ord_info'
 
-        PRINT '>> Inserting Table: bronze.arc_ord_payment_info';
-        BULK INSERT bronze.arc_ord_payment_info
-        FROM 'E:\E-commerce data\archive\olist_order_payments_dataset.csv'
-        WITH (
-            FIRSTROW = 2,
-            FORMAT = 'CSV',
-            FIELDTERMINATOR = ',',
-            FIELDQUOTE = '"',
-            ROWTERMINATOR = '0x0a',
-            TABLOCK
-        );
-        SET @end_time = GETDATE();
-        PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR(10)) + ' sec';
-        PRINT '>> ------------ ';
+    TRUNCATE TABLE bronze.arc_ord_info;
 
-        -- ===================================================================
-        -- 6. Ingest Order Reviews Dataset (Flexible Staging Text Sponge)
-        -- ===================================================================
-        SET @start_time = GETDATE();
-        
-        DROP TABLE IF EXISTS #temp_reviews;
-        CREATE TABLE #temp_reviews (
-            review_id               VARCHAR(MAX),
-            order_id                VARCHAR(MAX),
-            review_score            VARCHAR(MAX),
-            review_comment_title    NVARCHAR(MAX),
-            review_comment_message  N
+    PRINT '>> Inserting Table: bronze.arc_ord_info'
+
+    BULK INSERT bronze.arc_ord_info
+    FROM 'E:\E-commerce data\archive\olist_orders_dataset.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
+
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+    -- 4. Ingest Order Items Dataset
+    SET @start_time = GETDATE();
+
+    PRINT '>> Truncating Table: bronze.arc_ord_item_info'
+
+    TRUNCATE TABLE bronze.arc_ord_item_info;
+
+    PRINT '>> Inserting Table: bronze.arc_ord_item_info'
+
+    BULK INSERT bronze.arc_ord_item_info
+    FROM 'E:\E-commerce data\archive\olist_order_items_dataset.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
+
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+    -- 5. Ingest Order Payments Dataset
+    SET @start_time = GETDATE();
+
+    PRINT '>> Truncating Table: bronze.arc_ord_item_info'
+
+    TRUNCATE TABLE bronze.arc_ord_payment_info;
+
+    PRINT '>> Inserting Table: bronze.arc_ord_item_info'
+
+    BULK INSERT bronze.arc_ord_payment_info
+    FROM 'E:\E-commerce data\archive\olist_order_payments_dataset.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
+
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+
+    -- 6. Ingest Order Reviews Dataset
+    SET @start_time = GETDATE();
+
+             SET @start_time = GETDATE();
+
+    PRINT '>> Truncating Table: bronze.arc_ord_rvew_info'
+    TRUNCATE TABLE bronze.arc_ord_rvew_info;
+
+    PRINT '>> Inserting Table: bronze.arc_ord_rvew_info'
+    -- Note: Data pre-processed manually to handle unclosed text qualifiers and raw line breaks
+    INSERT INTO bronze.arc_ord_rvew_info (
+        review_id,
+        order_id,
+        review_score,
+        review_comment_title,
+        review_comment_message,
+        review_creation_date,
+        review_answer_timestamp
+    )
+    VALUES
+                   
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+    -- 7. Ingest Products Catalog Dataset
+    SET @start_time = GETDATE();
+
+    PRINT '>> Truncating Table: bronze.arc_prduct_info'
+
+    TRUNCATE TABLE bronze.arc_prduct_info;
+
+    PRINT '>> Inserting Table: bronze.arc_prduct_info'
+
+    BULK INSERT bronze.arc_prduct_info
+    FROM 'E:\E-commerce data\archive\olist_products_dataset.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
+
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+    -- 8. Ingest Sellers Merchant Dataset
+    SET @start_time = GETDATE();
+
+    PRINT '>> Truncating Table: bronze.arc_seler_info'
+
+    TRUNCATE TABLE bronze.arc_seler_info;
+
+    PRINT '>> Inserting Table: bronze.arc_seler_info'
+
+    BULK INSERT bronze.arc_seler_info
+    FROM 'E:\E-commerce data\archive\olist_sellers_dataset.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
+
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+    -- 9. Ingest Product Category Localization Translation Map
+    SET @start_time = GETDATE();
+
+    PRINT '>> Truncating Table: bronze.arc_prdt_ctr_nme_info'
+
+    TRUNCATE TABLE bronze.arc_prdt_ctr_nme_info;
+
+    PRINT '>> Inserting Table: bronze.arc_prdt_ctr_nme_info'
+
+    BULK INSERT bronze.arc_prdt_ctr_nme_info
+    FROM 'E:\E-commerce data\archive\product_category_name_translation.csv'
+    WITH (
+        FIRSTROW = 2,
+        FORMAT = 'CSV',
+        FIELDTERMINATOR = ',',
+        FIELDQUOTE = '"',
+        ROWTERMINATOR = '0x0a',
+        TABLOCK
+    );
+
+    SET @end_time = GETDATE();
+    PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
+    PRINT '>> ------------ ';
+
+    SET @batch_end_time = GETDATE();
+     PRINT '=================================================='
+    PRINT 'Loading Bronze Layer is Completed'
+    PRINT '   -- Total Load Duration: ' + CAST(DATEDIFF(ss, @batch_start_time, @batch_end_time) AS NVARCHAR) + 'sec';
+    PRINT '=================================================='
+
+
+    END TRY
+    BEGIN CATCH
+    PRINT '=================================================='
+    PRINT 'ERROR OCCURED DURING BRONZE LAYER'
+    PRINT 'Error Message' + ERROR_MESSAGE();
+    PRINT 'Error Message' + CAST(ERROR_NUMBER() AS VARCHAR);
+    PRINT '=================================================='
+    END CATCH
