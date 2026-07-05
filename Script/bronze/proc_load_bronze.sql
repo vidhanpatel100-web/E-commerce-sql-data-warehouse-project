@@ -133,22 +133,8 @@ PRINT '=================================================='
     -- 6. Ingest Order Reviews Dataset
     SET @start_time = GETDATE();
 
-    PRINT '>> Truncating Table: bronze.arc_ord_rvew_info'
-        
-    TRUNCATE TABLE bronze.arc_ord_rvew_info;
-
-    PRINT '>> Inserting Table: bronze.arc_ord_rvew_info'
-    -- Note: Data pre-processed manually to handle unclosed text qualifiers and raw line breaks
-    INSERT INTO bronze.arc_ord_rvew_info (
-        review_id,
-        order_id,
-        review_score,
-        review_comment_title,
-        review_comment_message,
-        review_creation_date,
-        review_answer_timestamp
-    )
-    VALUES
+    PRINT '>> Note: Data pre-processed manually to handle unclosed text qualifiers and raw line breaks'
+    
                    
     SET @end_time = GETDATE();
     PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
