@@ -133,9 +133,8 @@ PRINT '=================================================='
     -- 6. Ingest Order Reviews Dataset
     SET @start_time = GETDATE();
 
-             SET @start_time = GETDATE();
-
     PRINT '>> Truncating Table: bronze.arc_ord_rvew_info'
+        
     TRUNCATE TABLE bronze.arc_ord_rvew_info;
 
     PRINT '>> Inserting Table: bronze.arc_ord_rvew_info'
