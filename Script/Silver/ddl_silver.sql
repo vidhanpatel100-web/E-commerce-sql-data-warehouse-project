@@ -70,10 +70,10 @@ CREATE TABLE silver.arc_geoloc_info(
         review_id                  VARCHAR(50),
         order_id                   VARCHAR(50),
         review_score               INT,
-        review_comment_title       NVARCHAR(200),
-        review_comment_message     NVARCHAR(MAX),
-        review_creation_date       DATETIME,
-        review_answer_timestamp    DATETIME,
+        review_comment_title       NVARCHAR(200) NULL,
+        review_comment_message     NVARCHAR(MAX) NULL,
+        review_creation_date       DATETIME NULL,
+        review_answer_timestamp    DATETIME NULL,
       dwn_create_date DATETIME2 DEFAULT GETDATE()
     );
 
