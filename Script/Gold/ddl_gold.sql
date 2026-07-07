@@ -15,97 +15,52 @@ Script Purpose:
 -- =============================================================
 -- 1. CUSTOMER DIMENSION (Unique Human-Being Grain)
 -- =============================================================
-CREATE OR ALTER VIEW gold.dim_customer AS
 
-WITH customer_map AS (
-    -- One row per (person, order) — avoids a self-join row blowup
-    SELECT DISTINCT
-        customer_unique_id,
-        customer_id,
-        customer_zip_code_prefix
-    FROM silver.arc_cust_info
-),
-
-customer_orders AS (
-    SELECT
-        cm.customer_unique_id,
-        cm.customer_id,
-        cm.customer_zip_code_prefix,
-        oi.order_id,
-        oi.order_status,
-        oi.order_purchase_timestamp
-    FROM customer_map cm
-    LEFT JOIN silver.arc_ord_info oi
-        ON cm.customer_id = oi.customer_id
-),
-
-latest_order AS (
-    -- The single most recent order per person — this is what makes
-    -- "latest_order_status" and "customer_zip_code" genuinely latest,
-    -- rather than an alphabetical MAX()
-    SELECT
-        customer_unique_id,
-        customer_id,
-        customer_zip_code_prefix,
-        order_status,
-        ROW_NUMBER() OVER (
-            PARTITION BY customer_unique_id
-            ORDER BY order_purchase_timestamp DESC
-        ) AS rn
-    FROM customer_orders
-),
-
-review_agg AS (
-    SELECT
-        order_id,
-        MAX(review_score)                AS latest_review_score,
+CREATE OR ALTER VIEW gold.dim_customer AS  
+SELECT
+    cf.customer_unique_id,
+    MAX(cf.customer_id) AS latest_session_customer_id, 
+    COUNT(DISTINCT oi.order_id) AS total_orders_placed,
+    MAX(oi.order_status) AS latest_order_status,
+  
+    MAX(rv.latest_review_score) AS latest_review_score,
+    AVG(CAST(rv.avg_review_score AS FLOAT)) AS lifetime_avg_review_score,
+    MIN(oi.order_purchase_timestamp) AS first_purchase_date,
+    MAX(oi.order_purchase_timestamp) AS latest_order_date,
+    cf.customer_zip_code_prefix AS customer_zip_code,
+    COALESCE(MAX(gf.geolocation_state), 'Unknown') AS customer_state,
+    COALESCE(MAX(gf.geolocation_city), 'Unknown/Unmapped') AS customer_city,
+    MAX(gf.geolocation_lat) AS customer_lat,
+    MAX(gf.geolocation_lng) AS customer_lng
+FROM silver.arc_cust_info cf
+-- 1. Deduplicated Geolocation
+LEFT JOIN (
+    SELECT 
+        geolocation_zip_code_prefix,
+        MAX(geolocation_city) AS geolocation_city, 
+        MAX(geolocation_state) AS geolocation_state,
+        AVG(geolocation_lat) AS geolocation_lat, 
+        AVG(geolocation_lng) AS geolocation_lng  
+    FROM silver.arc_geoloc_info
+    GROUP BY geolocation_zip_code_prefix
+) gf ON cf.customer_zip_code_prefix = gf.geolocation_zip_code_prefix
+-- 2. FIX: Join to Orders using all historical customer keys belonging to that unique person
+LEFT JOIN silver.arc_cust_info cf_all 
+    ON cf.customer_unique_id = cf_all.customer_unique_id
+LEFT JOIN silver.arc_ord_info oi 
+    ON cf_all.customer_id = oi.customer_id
+-- 3. Left Join to Reviews (Pre-aggregated by order_id)
+LEFT JOIN (
+    SELECT 
+        order_id, 
+        MAX(review_score) AS latest_review_score,
         AVG(CAST(review_score AS FLOAT)) AS avg_review_score
     FROM silver.arc_ord_rvew_info
     GROUP BY order_id
-),
-
-geoloc_agg AS (
-    SELECT
-        geolocation_zip_code_prefix,
-        MAX(geolocation_city)  AS geolocation_city,
-        MAX(geolocation_state) AS geolocation_state,
-        AVG(geolocation_lat)   AS geolocation_lat,
-        AVG(geolocation_lng)   AS geolocation_lng
-    FROM silver.arc_geoloc_info
-    GROUP BY geolocation_zip_code_prefix
-)
-
-SELECT
-    co.customer_unique_id,
-    lo.customer_id                                     AS latest_session_customer_id,
-    COUNT(DISTINCT co.order_id)                         AS total_orders_placed,
-    lo.order_status                                     AS latest_order_status,
-    MAX(rv.latest_review_score)                         AS latest_review_score,
-    AVG(CAST(rv.avg_review_score AS FLOAT))             AS lifetime_avg_review_score,
-    MIN(co.order_purchase_timestamp)                    AS first_purchase_date,
-    MAX(co.order_purchase_timestamp)                    AS latest_order_date,
-    lo.customer_zip_code_prefix                         AS customer_zip_code,
-    gf.geolocation_state                                AS customer_state,
-    gf.geolocation_city                                 AS customer_city,
-    gf.geolocation_lat                                  AS customer_lat,
-    gf.geolocation_lng                                  AS customer_lng
-FROM customer_orders co
-LEFT JOIN review_agg rv
-    ON co.order_id = rv.order_id
-LEFT JOIN latest_order lo
-    ON co.customer_unique_id = lo.customer_unique_id
-    AND lo.rn = 1
-LEFT JOIN geoloc_agg gf
-    ON lo.customer_zip_code_prefix = gf.geolocation_zip_code_prefix
-GROUP BY
-    co.customer_unique_id,
-    lo.customer_id,
-    lo.order_status,
-    lo.customer_zip_code_prefix,
-    gf.geolocation_state,
-    gf.geolocation_city,
-    gf.geolocation_lat,
-    gf.geolocation_lng;
+) rv ON oi.order_id = rv.order_id
+GROUP BY 
+    cf.customer_unique_id,
+    cf.customer_zip_code_prefix;
 GO
 
 -- =============================================================
