@@ -15,7 +15,8 @@ Raw CSVs land in an archive folder, get loaded into SQL Server, and move through
 
 ### Silver → Gold lineage
 
-<img width="1328" height="706" alt="image" src="https://github.com/user-attachments/assets/b17b542c-ebe7-44f7-bc58-6f96d17d289a" />
++<img width="1305" height="696" alt="image" src="https://github.com/user-attachments/assets/684c3734-89e7-4d32-b97a-7d6d85a02c53" />
+
 
 Nine Bronze tables map one-to-one into nine Silver tables. From there, the fan-out starts: most Silver tables feed multiple Gold objects. `silver.arc_cust_info`, for instance, feeds both `gold.dim_customer` and `gold.fact_sales`, since customer identity shows up in both the dimension and every sales record. The lines in this diagram are really a map of every join in the Gold layer views — useful for tracing "if I change this Silver column, what breaks downstream."
 
