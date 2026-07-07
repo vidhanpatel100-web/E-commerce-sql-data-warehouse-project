@@ -8,8 +8,6 @@ This isn't a toy dataset cleaned up for a tutorial. Olist's real data is messy i
 
 ### High-level flow
 
-![High Level Architecture](docs/images/architecture-overview.png)
-
 <img width="1053" height="730" alt="image" src="https://github.com/user-attachments/assets/42db1b9c-82b6-4b21-babf-de38c9aa14cc" />
 
 
@@ -17,13 +15,14 @@ Raw CSVs land in an archive folder, get loaded into SQL Server, and move through
 
 ### Silver → Gold lineage
 
-![Bronze to Silver to Gold Lineage](docs/images/lineage-diagram.png)
+<img width="1328" height="706" alt="image" src="https://github.com/user-attachments/assets/b17b542c-ebe7-44f7-bc58-6f96d17d289a" />
 
 Nine Bronze tables map one-to-one into nine Silver tables. From there, the fan-out starts: most Silver tables feed multiple Gold objects. `silver.arc_cust_info`, for instance, feeds both `gold.dim_customer` and `gold.fact_sales`, since customer identity shows up in both the dimension and every sales record. The lines in this diagram are really a map of every join in the Gold layer views — useful for tracing "if I change this Silver column, what breaks downstream."
 
 ### Star schema (Gold layer)
 
-![Star Schema](docs/images/star-schema.png)
+<img width="967" height="620" alt="image" src="https://github.com/user-attachments/assets/c1bc191c-b5ca-4d61-a58f-bab9d38d6a1d" />
+
 
 `gold.fact_sales` sits at the center, at order-line-item grain, with foreign keys out to four dimensions:
 
@@ -34,7 +33,8 @@ Nine Bronze tables map one-to-one into nine Silver tables. From there, the fan-o
 
 ### Source system integration model
 
-![Integration Model](docs/images/integration-model.png)
+<img width="1469" height="760" alt="image" src="https://github.com/user-attachments/assets/8d340eec-0252-4785-9eee-81197986a32b" />
+
 
 This is the Silver-layer join map before anything gets aggregated into Gold — how `arc_cust_info`, `arc_ord_info`, `arc_ord_item_info`, `arc_ord_payment_info`, `arc_ord_rvew_info`, `arc_prduct_info`, `arc_seler_info`, and `arc_geoloc_info` actually connect to each other via `customer_id`, `order_id`, `product_id`, `seller_id`, and zip code prefix. This is the reference I went back to most often while debugging join fan-out issues during Gold layer development — it's worth keeping in the repo for exactly that reason, not just as documentation.
 
@@ -55,7 +55,6 @@ docs/       -- architecture notes, KPI/dashboard planning
 tests/      -- data quality validation scripts (null checks, dedup checks, referential integrity)
 ```
 
-*(Note: consolidate the `test`/`tests` folder duplication before publishing — keep one.)*
 
 ## Dataset
 
