@@ -15,6 +15,9 @@ Script Purpose:
 -- =============================================================
 -- 1. CUSTOMER DIMENSION (Unique Human-Being Grain)
 -- =============================================================
+IF OBJECT_ID('gold.dim_customer' , 'U') IS NOT NULL
+    DROP VIEW gold.dim_customer;
+
 
 CREATE OR ALTER VIEW gold.dim_customer AS  
 SELECT
@@ -75,6 +78,9 @@ GO
 -- avg_review_score is safe to average (it's a repeated constant per
 -- order) but not safe to SUM for the same reason.
 -- =============================================================
+    IF OBJECT_ID('gold.fact_sales' , 'U') IS NOT NULL
+    DROP VIEW gold.fact_sales;
+
 CREATE OR ALTER VIEW gold.fact_sales AS
 SELECT
     oit.order_id,
@@ -118,6 +124,10 @@ GO
 -- unique in this view. Any true review count must use
 -- COUNT(DISTINCT review_id), never COUNT(*).
 -- =============================================================
+
+    IF OBJECT_ID('gold.dim_review' , 'U') IS NOT NULL
+    DROP VIEW gold.dim_review;
+
 CREATE OR ALTER VIEW gold.dim_review AS
 SELECT
     rv.review_id,
@@ -161,6 +171,9 @@ GO
 -- =============================================================
 -- 5. PRODUCT DIMENSION (Clean E-Commerce Catalog)
 -- =============================================================
+   IF OBJECT_ID('gold.dim_product' , 'U') IS NOT NULL
+    DROP VIEW gold.dim_product;
+
 CREATE OR ALTER VIEW gold.dim_product AS
 SELECT
     pi.product_id,
