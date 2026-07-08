@@ -35,7 +35,8 @@ Nine Bronze tables map one-to-one into nine Silver tables. From there, the fan-o
 
 ### Source system integration model
 
-<img width="1056" height="714" alt="image" src="https://github.com/user-attachments/assets/eacfc508-af5d-4d0a-9f1f-5886d698b5a1" />
+<img width="1311" height="797" alt="image" src="https://github.com/user-attachments/assets/dff61290-244e-4abe-ab9f-4a2f25b82d89" />
+
 
 
 
