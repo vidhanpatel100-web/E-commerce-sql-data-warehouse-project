@@ -34,7 +34,8 @@ Nine Bronze tables map one-to-one into nine Silver tables. From there, the fan-o
 
 ### Source system integration model
 
-<img width="1469" height="760" alt="image" src="https://github.com/user-attachments/assets/8d340eec-0252-4785-9eee-81197986a32b" />
+<img width="1056" height="714" alt="image" src="https://github.com/user-attachments/assets/eacfc508-af5d-4d0a-9f1f-5886d698b5a1" />
+
 
 
 This is the Silver-layer join map before anything gets aggregated into Gold — how `arc_cust_info`, `arc_ord_info`, `arc_ord_item_info`, `arc_ord_payment_info`, `arc_ord_rvew_info`, `arc_prduct_info`, `arc_seler_info`, and `arc_geoloc_info` actually connect to each other via `customer_id`, `order_id`, `product_id`, `seller_id`, and zip code prefix. This is the reference I went back to most often while debugging join fan-out issues during Gold layer development — it's worth keeping in the repo for exactly that reason, not just as documentation.
