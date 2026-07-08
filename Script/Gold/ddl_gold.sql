@@ -121,23 +121,20 @@ GO
 CREATE OR ALTER VIEW gold.dim_review AS
 SELECT
     rv.review_id,
-    oif.order_id,
+    orf.order_id,
     oif.product_id,
     pcn.product_category_name_english,
     rv.review_score,
-    COALESCE(rv.review_comment_title, 'No Title Provided')     AS review_title,
-    COALESCE(rv.review_comment_message, 'No Written Comment')  AS review_message,
+    COALESCE(rv.review_comment_title, 'No Title Provided') AS review_title,
+    COALESCE(rv.review_comment_message, 'No Written Comment') AS review_message,
     rv.review_creation_date,
     rv.review_answer_timestamp
 FROM silver.arc_ord_rvew_info rv
-LEFT JOIN silver.arc_ord_item_info oif
-    ON rv.order_id = oif.order_id
-LEFT JOIN silver.arc_prduct_info pif
-    ON oif.product_id = pif.product_id
-LEFT JOIN silver.arc_prdt_ctr_nme_info pcn
-    ON pif.product_category_name = pcn.product_category_name;
+        LEFT JOIN silver.arc_ord_info orf ON rv.order_id = orf.order_id
+        LEFT JOIN silver.arc_ord_item_info oif ON orf.order_id = oif.order_id
+        LEFT JOIN silver.arc_prduct_info pif ON oif.product_id = pif.product_id
+        LEFT JOIN silver.arc_prdt_ctr_nme_info pcn ON pif.product_category_name = pcn.product_category_name
 GO
-
 -- =============================================================
 -- 4. SELLER DIMENSION (Clean Merchant Geographics)
 -- =============================================================
