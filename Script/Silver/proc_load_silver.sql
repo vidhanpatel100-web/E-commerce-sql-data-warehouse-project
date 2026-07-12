@@ -21,7 +21,8 @@ Usage Example:
 ======================================================================
 */
 
-CREATE OR ALTER PROCEDURE silver.ecommerce_load_bronze AS
+
+CREATE OR ALTER  PROCEDURE [silver].[ecommerce_load_bronze] AS
 
 BEGIN
 
@@ -197,35 +198,55 @@ PRINT '=================================================='
     PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
     PRINT '>> ------------ ';
 
-    -- 6. Ingest Order Reviews Dataset
-    SET @start_time = GETDATE();
+ -- 6. Ingest Order Reviews Dataset
+   SET @start_time = GETDATE();
 
-    PRINT '>> Truncating Table: silver.arc_ord_rvew_info'
+   PRINT '>> Truncating Table: silver.arc_ord_rvew_info';
         
-    TRUNCATE TABLE silver.arc_ord_rvew_info;
+   TRUNCATE TABLE silver.arc_ord_rvew_info;
 
-    PRINT '>> Inserting Table: silver.arc_ord_rvew_info'
-        
-                INSERT INTO silver.arc_ord_rvew_info(
-                    review_id,
-                    order_id,
-                    review_score,
-                    review_comment_title,
-                    review_comment_message,
-                    review_creation_date,
-                    review_answer_timestamp
-                )
-            SELECT  
-                    review_id,
-                    order_id,
-                    review_score,
-                    review_comment_title,
-                    review_comment_message,
-                    review_creation_date,
-                    review_answer_timestamp
-              FROM bronze.arc_ord_rvew_info
+   PRINT '>> Inserting Table: silver.arc_ord_rvew_info';
+   
+   -- The semicolon safely closes the print statement batch before the CTE starts
+   ;
+   WITH DeduplicatedStaging AS (
+       SELECT  
+           review_id,
+           order_id,
+           review_score,
+           review_comment_title,
+           review_comment_message,
+           review_creation_date,
+           review_answer_timestamp,
+           -- SILVER CORE DEDUPLICATION: Enforces 1 row per unique review_id
+           ROW_NUMBER() OVER (
+               PARTITION BY review_id 
+               ORDER BY review_answer_timestamp DESC, review_creation_date DESC, order_id ASC
+           ) AS silver_dedup_rank
+       FROM bronze.arc_ord_rvew_info
+       WHERE review_id IS NOT NULL
+   )
+   INSERT INTO silver.arc_ord_rvew_info (
+       review_id,
+       order_id,
+       review_score,
+       review_comment_title,
+       review_comment_message,
+       review_creation_date,
+       review_answer_timestamp
+   )
+   SELECT 
+       review_id,
+       order_id,
+       review_score,
+       review_comment_title,
+       review_comment_message,
+       review_creation_date,
+       review_answer_timestamp
+   FROM DeduplicatedStaging
+   WHERE silver_dedup_rank = 1;
 
-                   
+   
     SET @end_time = GETDATE();
     PRINT '>> Load Duration: ' + CAST(DATEDIFF(ss, @start_time, @end_time) AS VARCHAR) + 'sec';
     PRINT '>> ------------ ';
