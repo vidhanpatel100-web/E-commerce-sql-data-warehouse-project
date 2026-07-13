@@ -1,12 +1,12 @@
 -- ========================================================
 -- E-Commerce Customer Strategy Matrix
--- Module: Master E-Commerce Portfolio Denormalized Table
--- Description: Combines transactional grains, logistics deltas,
---              deduplicated reviews, and fixed RFM segmentations.
+-- Module: Complete Analytical Dataset with RFM Segmentations
+-- Description: Integrates deep customer lifecycle segmentation metrics 
+--              with granular logistics and review dimensions.
 -- ========================================================
 
 WITH CustomerRFM AS (
-    -- Subquery to calculate lifecycle metrics per unique customer
+    -- Subquery to calculate lifecycle metrics per unique customer profile
     SELECT
         customer_unique_id,
         SUM(item_price) AS total_spend,
@@ -17,26 +17,14 @@ WITH CustomerRFM AS (
     GROUP BY customer_unique_id
 ),
 CustomerSegments AS (
-    -- Subquery to assign tight, hierarchical strategic marketing buckets
+    -- Subquery to assign the strategic marketing buckets without gaps
     SELECT
         customer_unique_id,
         CASE
-            -- 1. High-value historical buyers who dropped off = Churned VIPs (Critical to capture!)
-            WHEN recency_days > 180 AND total_spend >= 300 THEN 'One-Time Churned (High-Value)'
-            
-            -- 2. Basic Churned baseline
+            WHEN total_orders >= 3 AND total_spend >= 300 THEN 'Core VIP Loyalist'
+            WHEN total_orders = 1 AND total_spend >= 400 THEN 'High-Value Whale'
+            WHEN account_age_months <= 2 AND total_spend < 400 THEN 'Newbie (Fresh Onboard)'
             WHEN recency_days > 180 THEN 'One-Time Churned'
-            
-            -- 3. High Frequency + Active + Spend = Core VIP
-            WHEN total_orders >= 3 AND total_spend >= 300 AND recency_days <= 180 THEN 'Core VIP Loyalist'
-            
-            -- 4. Single major ticket purchase, still active
-            WHEN total_orders = 1 AND total_spend >= 400 AND recency_days <= 180 THEN 'High-Value Whale'
-            
-            -- 5. Very recent onboard with regular baseline spend
-            WHEN account_age_months <= 2 AND total_spend < 400 AND recency_days <= 45 THEN 'Newbie (Fresh Onboard)'
-            
-            -- 6. Catch-all fallback
             ELSE 'Standard Active Buyer'
         END AS customer_segment
     FROM CustomerRFM
@@ -47,7 +35,7 @@ SELECT DISTINCT
     FORMAT(fs.order_purchase_timestamp, 'yyyy-MM') AS order_month_year,
     fs.order_purchase_timestamp,
 
-    -- 2. Logistics & Delivery Performance 
+    -- 2. Logistics & Delivery Performance
     fs.order_delivered_customer_date,
     fs.order_estimated_delivery_date,
     DATEDIFF(DAY, fs.order_purchase_timestamp, fs.order_delivered_customer_date) AS actual_delivery_days,
@@ -87,7 +75,7 @@ LEFT JOIN CustomerSegments cs
     ON fs.customer_unique_id = cs.customer_unique_id
 LEFT JOIN gold.dim_product dp
     ON fs.product_id = dp.product_id
-LEFT JOIN gold.dim_review drc 
+LEFT JOIN gold.dim_review_clean drc -- Aligned to your clean, deduplicated table grain
     ON fs.order_id = drc.order_id
 LEFT JOIN gold.dim_seller ds
     ON fs.seller_id = ds.seller_id
