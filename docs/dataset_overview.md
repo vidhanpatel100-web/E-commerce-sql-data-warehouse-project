@@ -32,8 +32,6 @@ The Gold Layer is the business-level representation of the data, structured as a
 
 **Purpose:** Transactional fact table at order line-item grain. One row per product per order.
 
-**⚠️ Grain caveat:** `total_order_payment` and `avg_review_score` are **order-level** values that repeat identically across every line item of that order. Summing `total_order_payment` directly across items in a multi-item order will overcount — aggregate with a distinct-order approach (e.g. an LOD expression in Tableau), never a plain `SUM()` across raw fact rows.
-
 | Column Name | Data Type | Description |
 |---|---|---|
 | `order_id` | NVARCHAR | Order identifier. Not unique in this table — repeats once per item in multi-item orders. |
@@ -56,7 +54,6 @@ The Gold Layer is the business-level representation of the data, structured as a
 
 **Purpose:** Review text and score detail, joined down to product level for category-level sentiment analysis.
 
-**⚠️ Grain caveat:** Reviews in the Olist source data are captured per *order*, not per *product*. A review on an order containing 3 different products will appear 3 times in this view — once per product. `review_id` is therefore **not unique** in this table. Any true review count must use `COUNT(DISTINCT review_id)`, never `COUNT(*)`.
 
 | Column Name | Data Type | Description |
 |---|---|---|
