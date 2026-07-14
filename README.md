@@ -88,10 +88,7 @@ The reporting layer is fully built using Power BI, connecting directly to the an
 
 **Complete & Validated.** The end-to-end architecture is fully functional. The repository hosts the complete lineage from raw Bronze storage, Silver cleaning routines, Gold dimensional modeling views, and the final analytical Power BI asset layout.
 
-
-
-
-
+https://github.com/vidhanpatel100-web/E-commerce-sql-data-warehouse-project/blob/main/compressive%20video.mp4
 
 
 ## License
