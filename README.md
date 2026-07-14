@@ -82,15 +82,11 @@ The reporting layer is fully built using Power BI, connecting directly to the an
 - **Logistics & Sentiment:** A core deep-dive analyzing operations impact, proving a clear mathematical correlation between extreme shipping latency (including a massive 188-day outlier) and plummeting customer review scores.
 
 ### Interactive Dashboard Walkthrough
-<!-- DRAG AND DROP YOUR MP4 VIDEO RIGHT HERE -->
+[](https://github.com/vidhanpatel100-web/E-commerce-sql-data-warehouse-project/blob/main/power_bi.mp4)]
 
 ## Status
 
-**Complete & Validated.** The end-to-end architecture is fully functional. The repository hosts the complete lineage from raw Bronze storage, Silver cleaning routines, Gold dimensional modeling views, and the final analytical Power BI asset layout.
-
-https://github.com/vidhanpatel100-web/E-commerce-sql-data-warehouse-project/blob/main/compressive%20video.mp4
-
-
+**Complete & Validated.** The end-to-end architecture is fully functional. The repository hosts the complete lineage from raw Bronze storage, Silver cleaning routines, Gold dimensional modeling views, and the final analytical Power BI asset layout
 ## License
 
 MIT — see `LICENSE`.
