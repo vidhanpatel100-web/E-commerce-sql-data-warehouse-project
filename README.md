@@ -72,13 +72,27 @@ tests/      -- data quality validation scripts (null checks, dedup checks, refer
 4. Deploy the Gold layer views (`Script/gold_layer_star_schema.sql`).
 5. Run the validation scripts in `tests/` to confirm row counts and data quality before connecting anything to Tableau.
 
-## Tableau
+## Power BI Dashboards
 
-Dashboards are in progress: an executive revenue overview, customer RFM/retention analytics, product and seller performance, logistics/delivery, and customer satisfaction — including a delivery-delay-vs-review-score analysis that's the headline finding of this project so far. Published dashboard link goes here once it's live.
+The reporting layer is fully built using Power BI, connecting directly to the analytical views in the Gold layer. The suite is broken down into four distinct strategic views:
+
+- **Core Business KPIs:** Macro revenue tracking, transaction volume, and product performance by cost brackets.
+- **Retention & RFM Strategy:** Precision customer behavioral cohort clustering (VIP Loyalists, Newbies, Standard Active, and One-Time Churned) to monitor long-term audience value.
+- **Geographic Insights:** Map-based supply and demand distributions tracking international seller density vs. regional customer concentration.
+- **Logistics & Sentiment:** A core deep-dive analyzing operations impact, proving a clear mathematical correlation between extreme shipping latency (including a massive 188-day outlier) and plummeting customer review scores.
+
+### Interactive Dashboard Walkthrough
+<!-- DRAG AND DROP YOUR MP4 VIDEO RIGHT HERE -->
 
 ## Status
 
-Bronze and Silver are complete and validated. Gold layer views are built and passing duplicate/integrity checks. Tableau dashboards are the current work in progress.
+**Complete & Validated.** The end-to-end architecture is fully functional. The repository hosts the complete lineage from raw Bronze storage, Silver cleaning routines, Gold dimensional modeling views, and the final analytical Power BI asset layout.
+
+
+
+
+
+
 
 ## License
 
