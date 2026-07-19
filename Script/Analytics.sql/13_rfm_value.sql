@@ -40,12 +40,12 @@ RFM_Calculated_Scores AS (
         NTILE(5) OVER (ORDER BY total_monetary ASC) AS m_score
     FROM Customer_Base_Metrics
 )
-
 SELECT 
     rfm.customer_unique_id,
-    rfm.recency_days,
-    rfm.total_orders,
-    rfm.total_monetary,
+    -- Re-aligned to match the original Power BI column schemas exactly
+    rfm.recency_days AS recency,
+    rfm.total_orders AS frequency,
+    rfm.total_monetary AS monetary,
     rfm.r_score,
     rfm.f_score,
     rfm.m_score,
