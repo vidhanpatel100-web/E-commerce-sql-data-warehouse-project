@@ -82,7 +82,7 @@ The reporting layer is fully built using Power BI, connecting directly to the an
 - **Logistics & Sentiment:** A core deep-dive analyzing operations impact, proving a clear mathematical correlation between extreme shipping latency (including a massive 188-day outlier) and plummeting customer review scores.
 
 ### Interactive Dashboard Walkthrough
-https://github.com/vidhanpatel100-web/E-commerce-sql-data-warehouse-project/blob/main/power_bi%20dashboard-compressed.mp4
+https://github.com/vidhanpatel100-web/E-commerce-sql-data-warehouse-project/blob/main/power_bi.mov
 
 ## Status
 
