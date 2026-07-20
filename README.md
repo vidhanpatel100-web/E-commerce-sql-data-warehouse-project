@@ -86,11 +86,12 @@ https://github.com/vidhanpatel100-web/E-commerce-sql-data-warehouse-project/blob
 
 ## Status
 
-**Complete & Validated.** The end-to-end architecture is fully functional. The repository hosts the complete lineage from raw Bronze storage, Silver cleaning routines, Gold dimensional modeling views, and the final analytical Power BI asset layout
-## License
+**Complete & Validated.** The end-to-end architecture is fully functional. The repository hosts the complete lineage from raw Bronze storage, Silver cleaning routines, Gold dimensional modeling views, and the final analytical Power BI asset layout.
 
 ## Breakdown explanation
 
 https://marketingbrain1.substack.com/p/ecommerce-vip-retention-rfm-analysis?r=3g34oc
+
+## License
 
 MIT — see `LICENSE`.
