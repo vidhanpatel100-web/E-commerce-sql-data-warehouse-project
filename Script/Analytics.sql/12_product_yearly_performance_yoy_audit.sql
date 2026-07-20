@@ -5,60 +5,34 @@
 --              historical averages and prior-year (PY) benchmarks.
 -- ========================================================
 
-WITH YearlyProductSales AS (
-    -- Step 1: Aggregate sales volumes grouped strictly by calendar year and category
+
+WITH yearly_product_sales AS(
     SELECT
-        YEAR(fs.order_purchase_timestamp) AS order_year, -- Optimized: YEAR() performs faster than FORMAT()
-        dp.product_category,
-        CAST(SUM(fs.item_price) AS DECIMAL(10, 2)) AS current_sales
-    FROM 
-        gold.fact_sales fs
-    LEFT JOIN 
-        gold.dim_product dp ON fs.product_id = dp.product_id
-    WHERE 
-        fs.order_purchase_timestamp IS NOT NULL
-        AND dp.product_category IS NOT NULL
-    GROUP BY 
-        YEAR(fs.order_purchase_timestamp),
+    FORMAT(forder_purchase_timestamp, 'yyyy') AS order_year,
+    product_category AS product_category,
+    SUM(item_price) AS current_sales
+    FROM gold.main_table
+    GROUP BY FORMAT(fs.order_purchase_timestamp, 'yyyy'),
         dp.product_category
-),
-PerformanceMetrics AS (
-    -- Step 2: Compute window analytics for long-term averages and lagging periods
-    SELECT
-        order_year,
-        product_category,
-        current_sales,
-        CAST(AVG(current_sales) OVER (PARTITION BY product_category) AS DECIMAL(10, 2)) AS avg_historical_sales,
-        LAG(current_sales, 1) OVER (PARTITION BY product_category ORDER BY order_year) AS prior_year_sales
-    FROM 
-        YearlyProductSales
 )
--- Step 3: Run final delta evaluations with tight null protection systems
 SELECT
-    pm.order_year,
-    pm.product_category,
-    pm.current_sales,
-    pm.avg_historical_sales,
-    
-    -- 1. Performance against historical category norm
-    CAST((pm.current_sales - pm.avg_historical_sales) AS DECIMAL(10, 2)) AS diff_from_avg,
-    CASE
-        WHEN (pm.current_sales - pm.avg_historical_sales) > 0 THEN 'ABOVE AVG'
-        WHEN (pm.current_sales - pm.avg_historical_sales) < 0 THEN 'BELOW AVG'
-        ELSE 'HISTORICAL NORM'
-    END AS historical_performance_tier,
-    
-    -- 2. Performance against prior year (YoY Tracking)
-    ISNULL(pm.prior_year_sales, 0.00) AS prior_year_sales,
-    CAST(ISNULL(pm.current_sales - pm.prior_year_sales, pm.current_sales) AS DECIMAL(10, 2)) AS diff_prior_year,
-    CASE
-        WHEN pm.prior_year_sales IS NULL THEN 'NEW ACQUISITION LAUNCH' -- Fixed: explicitly labels baseline years
-        WHEN (pm.current_sales - pm.prior_year_sales) > 0 THEN 'GROWTH INCREASE'
-        WHEN (pm.current_sales - pm.prior_year_sales) < 0 THEN 'VOLUME DECREASE'
-        ELSE 'STAGNANT STABLE'
-    END AS yoy_trend_status
-FROM 
-    PerformanceMetrics pm
-ORDER BY 
-    pm.product_category ASC,
-    pm.order_year ASC;
+order_year,
+product_category,
+current_sales,
+AVG(current_sales) OVER(PARTITION BY product_category) As avg_sales,
+current_sales - AVG(current_sales) OVER(PARTITION BY product_category) AS diff_avg,
+CASE
+    WHEN current_sales - AVG(current_sales) OVER(PARTITION BY product_category) > 0 THEN 'ABOVE AVG'
+    WHEN current_sales - AVG(current_sales) OVER(PARTITION BY product_category) < 0 THEN 'BELOW AVG'
+    ELSE 'AVG'
+    END avg_change,
+ COALESCE(LAG(current_sales) OVER(PARTITION BY product_category ORDER BY order_year),0) AS py_sales,
+ COALESCE(current_sales - LAG(current_sales) OVER(PARTITION BY product_category ORDER BY order_year),0) AS diff_py,
+ -- YOY ANALYSIS
+ CASE
+    WHEN current_sales - LAG(current_sales) OVER(PARTITION BY product_category ORDER BY order_year) > 0 THEN 'INCREASE'
+    WHEN current_sales - LAG(current_sales) OVER(PARTITION BY product_category ORDER BY order_year) < 0 THEN 'DECREASE'
+    ELSE 'NO CHANGE'
+    END py_change
+FROM yearly_product_sales
+ORDER BY product_category,order_year
